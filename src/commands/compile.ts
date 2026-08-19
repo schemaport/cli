@@ -7,7 +7,7 @@ import type {
   SchemaPortProvider,
   Transformation,
 } from '@schemaport/core';
-import { SCHEMAPORT_VERSION, stableStringify, toolFileBaseName } from '@schemaport/core';
+import { SCHEMAPORT_VERSION, stableStringify, toolFileBaseName, compareStrings} from '@schemaport/core';
 import type { OutputFormat } from '../args.js';
 import { EXIT } from '../errors.js';
 import type { Context } from '../io.js';
@@ -127,13 +127,13 @@ export function runCompile(ctx: Context, input: CompileInput): number {
  * from the clock or the file system ordering goes in.
  */
 function buildManifest(ctx: Context, input: CompileInput, outcomes: readonly ToolOutcome[]): Manifest {
-  const targetIds = input.providers.map((provider) => provider.id).sort((a, b) => a.localeCompare(b));
+  const targetIds = input.providers.map((provider) => provider.id).sort(compareStrings);
 
   const tools: ManifestTool[] = [];
   for (const outcome of outcomes) {
     const succeeded = outcome.perTarget
       .filter((entry) => entry.outputPath !== undefined)
-      .sort((a, b) => a.provider.id.localeCompare(b.provider.id));
+      .sort((a, b) => compareStrings(a.provider.id, b.provider.id));
     if (succeeded.length === 0) continue;
 
     const targets: Record<string, ManifestTargetEntry> = {};
@@ -157,7 +157,7 @@ function buildManifest(ctx: Context, input: CompileInput, outcomes: readonly Too
   return {
     schemaPortVersion: SCHEMAPORT_VERSION,
     targets: targetIds,
-    tools: tools.sort((a, b) => a.name.localeCompare(b.name)),
+    tools: tools.sort((a, b) => compareStrings(a.name, b.name)),
   };
 }
 

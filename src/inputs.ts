@@ -1,6 +1,6 @@
 import { isAbsolute, resolve, sep } from 'node:path';
 import type { LoadError, LoadedTool } from '@schemaport/core';
-import { displayPath, loadTools } from '@schemaport/core';
+import { displayPath, loadTools, compareStrings} from '@schemaport/core';
 import { UsageError } from './errors.js';
 
 export interface LoadedInput {
@@ -45,7 +45,7 @@ export function loadInputs(paths: readonly string[], cwd: string): LoadedInput {
     }
   }
 
-  tools.sort((a, b) => a.tool.name.localeCompare(b.tool.name));
+  tools.sort((a, b) => compareStrings(a.tool.name, b.tool.name));
   return { tools, errors };
 }
 
