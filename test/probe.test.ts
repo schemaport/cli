@@ -1,8 +1,11 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { REFUND_V1, cleanupTempDirs, invoke, parseJson } from './helpers.js';
 import { ACCEPTED, MISSING_KEY, REJECTED, compatibleProvider, probingProvider } from './fakes.js';
 
 afterAll(cleanupTempDirs);
+
+/** Every environment variable a hosted provider reads for credentials. */
+const API_KEY_VARS = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_API_KEY'];
 
 /**
  * Every probe test drives fake providers, or a target that cannot make a
@@ -100,5 +103,36 @@ describe('probe', () => {
     const { code, stdout } = await invoke(['probe', REFUND_V1, '--targets', 'mcp']);
     expect(code).toBe(0);
     expect(stdout).toContain('SKIPPED');
+  });
+
+  it('never turns a missing key into a rejection, with the real registry', async () => {
+    // Blanking the variables guarantees every hosted target stops before it
+    // would build a client, so this test cannot reach the network.
+    for (const name of API_KEY_VARS) vi.stubEnv(name, '');
+
+    try {
+      const { code, stdout } = await invoke(['probe', REFUND_V1, '--format', 'json']);
+      const summary = parseJson(stdout)['summary'] as Record<string, number>;
+
+      expect(summary['rejected']).toBe(0);
+      expect(summary['accepted']).toBe(0);
+      expect(code).not.toBe(1);
+      expect([0, 3]).toContain(code);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('names the environment variable to set, with the real registry', async () => {
+    for (const name of API_KEY_VARS) vi.stubEnv(name, '');
+
+    try {
+      const { code, stdout } = await invoke(['probe', REFUND_V1, '--targets', 'openai']);
+      expect(code).toBe(3);
+      expect(stdout).toContain('OPENAI_API_KEY');
+      expect(stdout).not.toContain('REJECTED');
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
