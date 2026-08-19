@@ -64,6 +64,19 @@ describe('usage errors exit 2', () => {
     expect(stderr).toContain('Valid formats are: text, json');
   });
 
+  it('does not treat a --help swallowed by a flag value as a help request', async () => {
+    const { code, stdout, stderr } = await invoke(['check', V1, '--fail-on', '--help']);
+    expect(code).toBe(2);
+    expect(stdout).toBe('');
+    expect(stderr).toContain('--fail-on');
+  });
+
+  it('does not treat a path called `help` as a help request', async () => {
+    const { code, stderr } = await invoke(['check', 'help']);
+    expect(code).toBe(2);
+    expect(stderr).toContain('Path does not exist.');
+  });
+
   it('rejects an unknown --fail-on', async () => {
     const { code, stderr } = await invoke(['check', V1, '--fail-on', 'anything']);
     expect(code).toBe(2);

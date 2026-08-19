@@ -4,14 +4,23 @@ import { compatibleProvider, diagnosingProvider } from './fakes.js';
 
 afterAll(cleanupTempDirs);
 
+const DISPLAY_NAMES = ['OpenAI', 'Anthropic', 'Gemini', 'MCP'];
+
+/** The provider section headers in the order they were printed, de-duplicated. */
+function sectionHeaders(stdout: string): string[] {
+  const seen: string[] = [];
+  for (const line of stdout.split('\n')) {
+    if (DISPLAY_NAMES.includes(line) && !seen.includes(line)) seen.push(line);
+  }
+  return seen;
+}
+
 describe('check with the real provider registry', () => {
   it('accepts a single file and prints a section per target', async () => {
     const { code, stdout } = await invoke(['check', REFUND_V1, '--fail-on', 'never']);
     expect(code).toBe(0);
     expect(stdout).toContain('Tool: refund_order');
-    for (const displayName of ['OpenAI', 'Anthropic', 'Gemini', 'MCP']) {
-      expect(stdout).toContain(displayName);
-    }
+    expect(sectionHeaders(stdout)).toEqual(DISPLAY_NAMES);
     expect(stdout).toMatch(/Result: \d+ errors?, \d+ warnings?/);
   });
 
@@ -23,10 +32,9 @@ describe('check with the real provider registry', () => {
 
   it('limits the run to the selected targets', async () => {
     const { stdout } = await invoke(['check', REFUND_V1, '--targets', 'gemini,mcp', '--fail-on', 'never']);
-    expect(stdout).toContain('Gemini');
-    expect(stdout).toContain('MCP');
-    expect(stdout).not.toContain('OpenAI');
-    expect(stdout).not.toContain('Anthropic');
+    // Section headers are whole lines; a provider message that happens to name
+    // another vendor must not be mistaken for one.
+    expect(sectionHeaders(stdout)).toEqual(['Gemini', 'MCP']);
   });
 
   it('emits a JSON document with the documented shape', async () => {

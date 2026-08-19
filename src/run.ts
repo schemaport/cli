@@ -73,6 +73,12 @@ function createContext(io: RunIO): Context {
 
 async function dispatch(ctx: Context, argv: readonly string[]): Promise<number> {
   const invocation = parseInvocation(argv);
+
+  if (invocation.help === true) {
+    ctx.out.line(helpText(invocation.command));
+    return EXIT.ok;
+  }
+
   const { config } = loadConfig(invocation.configPath, ctx.cwd);
 
   switch (invocation.command) {

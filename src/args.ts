@@ -14,6 +14,8 @@ export interface ParsedInvocation {
   command: CommandName;
   paths: string[];
   format: OutputFormat;
+  /** `--help` after the command name: print that command's reference instead. */
+  help?: boolean;
   configPath?: string;
   targets?: string[];
   failOn?: string;
@@ -56,13 +58,21 @@ const OPTIONS: Record<CommandName, OptionConfig> = {
   },
 };
 
-/** Whether the invocation is asking for help rather than doing work. */
+/**
+ * Whether the invocation is asking for help rather than doing work.
+ *
+ * Only the leading argument is inspected. `--help` further along the command
+ * line is left to `parseArgs`, so `--fail-on --help` is the usage error it
+ * really is rather than a help screen.
+ */
 export function wantsHelp(argv: readonly string[]): boolean {
-  return argv.length === 0 || argv.includes('--help') || argv.includes('-h') || argv[0] === 'help';
+  const first = argv[0];
+  return first === undefined || first === '--help' || first === '-h' || first === 'help';
 }
 
 export function wantsVersion(argv: readonly string[]): boolean {
-  return argv.includes('--version') || argv.includes('-V');
+  const first = argv[0];
+  return first === '--version' || first === '-V';
 }
 
 /** The command named first on the command line, if it is one we know. */
@@ -106,6 +116,8 @@ export function parseInvocation(argv: readonly string[]): ParsedInvocation {
     paths: parsed.positionals,
     format: readFormat(values['format']),
   };
+
+  if (values['help'] === true) invocation.help = true;
 
   const configPath = values['config'];
   if (typeof configPath === 'string') invocation.configPath = configPath;
