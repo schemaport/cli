@@ -1,0 +1,13 @@
+{
+  "name": "refund_order",
+  "description": "Refunds all or part of an order",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "orderId": { "type": "string", "description": "The order to refund" },
+      "amount": { "type": "number", "minimum": 0, "description": "Amount to refund. Omit to refund the full order." },
+      "refundMethod": { "type": "string", "description": "How to return the funds", "enum": ["original_payment", "store_credit", "bank_transfer"] }
+    },
+    "required": ["orderId"]
+  }
+}

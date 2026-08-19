@@ -1,0 +1,12 @@
+{
+  "name": "tag_resource",
+  "description": "Attaches arbitrary string tags to a resource",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "resourceId": { "type": "string" },
+      "tags": { "type": "object", "additionalProperties": { "type": "string" } }
+    },
+    "required": ["resourceId", "tags"]
+  }
+}

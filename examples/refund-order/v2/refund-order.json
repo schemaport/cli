@@ -1,0 +1,15 @@
+{
+  "name": "refund_order",
+  "description": "Refunds all or part of an order",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "orderId": { "type": "string", "description": "Identifier of the order to refund" },
+      "amount": { "type": "number", "minimum": 0, "description": "Amount to refund. Omit to refund the full order." },
+      "currency": { "type": "string", "description": "ISO 4217 currency code", "enum": ["usd", "eur", "gbp"] },
+      "refundMethod": { "type": "string", "description": "How to return the funds", "enum": ["original_payment", "bank_transfer"] },
+      "reason": { "type": "string", "description": "Why the order is being refunded" }
+    },
+    "required": ["orderId", "currency"]
+  }
+}
