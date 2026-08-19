@@ -1,0 +1,49 @@
+{
+  "name": "schemaport",
+  "version": "0.1.0",
+  "description": "Define an AI tool schema once, then safely use it across OpenAI, Anthropic, Gemini and MCP. Check, compile, probe and diff tool schemas from the command line.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "bin": { "schemaport": "./dist/cli.js" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE", "docs", "examples"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/schemaport/cli.git"
+  },
+  "keywords": ["schemaport", "cli", "json-schema", "tool-calling", "llm", "openai", "anthropic", "gemini", "mcp"],
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@schemaport/core": "^0.1.0",
+    "@schemaport/provider-anthropic": "^0.1.0",
+    "@schemaport/provider-gemini": "^0.1.0",
+    "@schemaport/provider-mcp": "^0.1.0",
+    "@schemaport/provider-openai": "^0.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^26.0.0",
+    "eslint": "^10.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.0.0"
+  }
+}
