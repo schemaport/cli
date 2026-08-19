@@ -65,6 +65,14 @@ export async function runProbe(ctx: Context, input: ProbeInput): Promise<number>
   }
 
   if (summary.rejected > 0) return EXIT.findings;
+
+  // A refused compilation is a finding about the schema, not a problem with the
+  // environment: nothing was sent because SchemaPort would not generate the
+  // weaker schema. It exits 1 alongside the other findings, so that `--allow-lossy`
+  // is what unblocks it rather than a change to the machine.
+  const refused = outcomes.some((entry) => entry.result.errorKind === 'compile-refused');
+  if (refused) return EXIT.findings;
+
   if (summary.errors > 0) return EXIT.environment;
   return EXIT.ok;
 }
