@@ -5,7 +5,7 @@
 | `0` | Success | The command ran and found nothing at or above its failure threshold. |
 | `1` | Findings | The command ran and found something: `check` diagnostics at or above `--fail-on`, a refused (lossy) compilation, breaking changes in `diff` at or above `--fail-on`, or a schema a provider rejected during `probe`. |
 | `2` | Usage or input error | The command could not run: unknown command, unknown flag, missing flag value, unknown target id, missing `--out`, a path that does not exist, invalid JSON, a file that is not a valid canonical tool, a duplicate tool name, or an invalid config file. |
-| `3` | Environment error | `probe` only. No verdict was reached: missing API key, authentication failure, unknown model, rate limit, network failure, or a compilation that was refused before anything could be sent. |
+| `3` | Environment error | `probe` only. No verdict was reached because of the environment: missing API key, authentication failure, unknown model, rate limit, or network failure. A refused compilation is **not** in this category — see below. |
 
 ## Per command
 
@@ -56,3 +56,21 @@ schemaport probe tools/ || [ $? -eq 3 ]
   2 always means "the CLI could not do the work you asked for".
 - An unexpected internal failure (for example, the output directory is not
   writable) is also reported on stderr and exits 2.
+
+## A refused compilation during `probe` exits 1, not 3
+
+`probe` compiles each tool before sending it. When compilation is refused
+because a transformation would weaken the schema, nothing is sent — but that is
+a finding about your schema, not a problem with the machine:
+
+```bash
+schemaport probe ./examples/lossy --targets openai
+# exit 1
+```
+
+`--allow-lossy` is what unblocks it. Exit code 3 is reserved for causes outside
+your schema: a missing key, a bad key, an unknown model, a rate limit, or a
+network failure.
+
+The check is run-wide and ordered. One refused compilation makes the whole run
+exit 1, even when every other target failed for a missing key.

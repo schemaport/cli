@@ -236,7 +236,8 @@ Four outcomes, each rendered differently:
 |---|---|---|
 | `✓ ACCEPTED` | The provider accepted the compiled definition. Notes report whether a tool call came back and whether its arguments matched the canonical schema. | none |
 | `✗ REJECTED` | The provider rejected the schema. The provider's own error message is printed verbatim. | exit 1 |
-| `⚠ ERROR` | No verdict: missing credentials, authentication failure, unknown model, rate limit, network failure, or a refused compilation. The `errorKind` is printed. | exit 3 (unless something was rejected) |
+| `⚠ ERROR` | No verdict: missing credentials, authentication failure, unknown model, rate limit, or network failure. The `errorKind` is printed. | exit 3 (unless something was rejected) |
+| `⚠ ERROR` (`compile-refused`) | Compilation was refused, so nothing was sent. This is a finding about your schema, not the environment. | exit 1 |
 | `– SKIPPED` | Probing does not apply to this target. | none |
 
 Credentials come from each provider's environment variable
