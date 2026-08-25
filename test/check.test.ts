@@ -106,3 +106,71 @@ describe('check exit codes', () => {
     expect(stdout).toContain('ℹ A fake info about `amount`.');
   });
 });
+
+describe('check --quiet', () => {
+  it('prints the headline status per target and no finding blocks', async () => {
+    const { stdout } = await invoke(['check', REFUND_V1, '--quiet', '--fail-on', 'never'], {
+      providers: [diagnosingProvider('error'), compatibleProvider()],
+    });
+
+    expect(stdout).toContain('✗ 1 error, 0 warnings');
+    expect(stdout).toContain('✓ Compatible');
+    expect(stdout).toContain('Result: 1 error, 0 warnings');
+
+    // Everything a finding block is made of is gone.
+    expect(stdout).not.toContain('A fake error about');
+    expect(stdout).not.toContain('Path:');
+    expect(stdout).not.toContain('SchemaPort can compile this');
+    expect(stdout).not.toContain('Docs:');
+  });
+
+  it('counts informational findings in the headline', async () => {
+    const { stdout } = await invoke(['check', REFUND_V1, '--quiet', '--fail-on', 'never'], {
+      providers: [diagnosingProvider('info')],
+    });
+    expect(stdout).toContain('ℹ 0 errors, 0 warnings, 1 informational');
+  });
+
+  it('keeps every tool and target heading, and the same Result line', async () => {
+    const loud = await invoke(['check', V1, '--fail-on', 'never']);
+    const quiet = await invoke(['check', V1, '--quiet', '--fail-on', 'never']);
+
+    expect(sectionHeaders(quiet.stdout)).toEqual(sectionHeaders(loud.stdout));
+    expect(quiet.stdout).toContain('Tool: refund_order');
+    expect(quiet.stdout).toContain('Tool: search_orders');
+    expect(quiet.stdout).toMatch(/✗ \d+ errors?, \d+ warnings?/);
+    expect(quiet.stdout).not.toContain('  Path: ');
+
+    const resultLine = (out: string) => out.split('\n').find((line) => line.startsWith('Result:'));
+    expect(resultLine(quiet.stdout)).toBe(resultLine(loud.stdout));
+    expect(quiet.stdout.length).toBeLessThan(loud.stdout.length);
+  });
+
+  it('does not change the exit code', async () => {
+    for (const failOn of ['error', 'warning', 'never']) {
+      const loud = await invoke(['check', V1, '--fail-on', failOn]);
+      const quiet = await invoke(['check', V1, '--quiet', '--fail-on', failOn]);
+      expect(quiet.code).toBe(loud.code);
+    }
+  });
+
+  it('leaves --format json byte-identical', async () => {
+    const plain = await invoke(['check', V1, '--format', 'json']);
+    const quiet = await invoke(['check', V1, '--quiet', '--format', 'json']);
+
+    expect(quiet.stdout).toBe(plain.stdout);
+    expect(quiet.code).toBe(plain.code);
+  });
+
+  it('is a check-only flag', async () => {
+    const { code, stderr } = await invoke(['compile', V1, '--out', 'generated', '--quiet']);
+    expect(code).toBe(2);
+    expect(stderr).toContain('--quiet');
+  });
+
+  it('is listed in `check --help`', async () => {
+    const { code, stdout } = await invoke(['check', '--help']);
+    expect(code).toBe(0);
+    expect(stdout).toContain('--quiet');
+  });
+});

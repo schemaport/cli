@@ -45,6 +45,9 @@ the diagnostics grouped by tool, then by target.
   --targets <ids>              Comma-separated: openai,anthropic,gemini,mcp
   --format text|json           Default: text
   --fail-on error|warning|never  Exit 1 threshold. Default: error
+  --quiet                      Print only the headline status per target and
+                               the Result line, not the individual findings.
+                               Text output only; --format json is unchanged.
   --config <file>              Config file. Default: ./schemaport.config.json`,
 
   compile: `schemaport compile <path...> --out <dir>
