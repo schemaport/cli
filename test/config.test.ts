@@ -53,6 +53,12 @@ describe('schemaport.config.json', () => {
     expect(loadConfig(undefined, dir).config.quiet).toBe(true);
   });
 
+  it('supplies the check failure threshold as a default', () => {
+    const dir = project({ schemas: 'tools', failOn: 'warning' });
+
+    expect(loadConfig(undefined, dir).config.failOn).toBe('warning');
+  });
+
   it('is read from --config when given', async () => {
     const dir = project({ schemas: 'tools', targets: ['mcp'] });
     writeFile(dir, 'other.json', JSON.stringify({ schemas: 'tools', targets: ['gemini'] }));
@@ -94,6 +100,14 @@ describe('invalid configuration exits 2', () => {
     const { code, stderr } = await invoke(['check'], { cwd: dir });
     expect(code).toBe(2);
     expect(stderr).toContain('must be an array of target ids');
+  });
+
+  it('rejects an unknown check failure threshold', async () => {
+    const dir = project({ schemas: 'tools', failOn: 'info' });
+    const { code, stderr } = await invoke(['check'], { cwd: dir });
+
+    expect(code).toBe(2);
+    expect(stderr).toContain('must be error, warning, or never');
   });
 
   it('rejects an unknown target id in the config file', async () => {
