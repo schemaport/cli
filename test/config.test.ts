@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Manifest } from '../src/index.js';
+import { loadConfig } from '../src/config.js';
 import { TRIVIAL_TOOL, cleanupTempDirs, invoke, parseJson, tempDir, writeFile } from './helpers.js';
 
 afterAll(cleanupTempDirs);
@@ -44,6 +45,12 @@ describe('schemaport.config.json', () => {
       readFileSync(join(dir, 'generated', 'manifest.json'), 'utf8'),
     ) as Manifest;
     expect(manifest.tools[0]?.targets['mcp']?.output).toBe('mcp/noop-tool.json');
+  });
+
+  it('supplies quiet check output as a default', () => {
+    const dir = project({ schemas: 'tools', quiet: true });
+
+    expect(loadConfig(undefined, dir).config.quiet).toBe(true);
   });
 
   it('is read from --config when given', async () => {
