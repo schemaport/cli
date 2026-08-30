@@ -19,6 +19,8 @@ export interface SchemaPortConfig {
   output?: string;
   /** Default `--allow-lossy`. */
   allowLossy?: boolean;
+  /** Default `check --quiet`. */
+  quiet?: boolean;
 }
 
 export interface LoadedConfig {
@@ -27,7 +29,7 @@ export interface LoadedConfig {
   path?: string;
 }
 
-const KNOWN_KEYS = new Set(['schemas', 'targets', 'output', 'allowLossy']);
+const KNOWN_KEYS = new Set(['schemas', 'targets', 'output', 'allowLossy', 'quiet']);
 
 /**
  * Load the config file.
@@ -91,7 +93,7 @@ function validateConfig(value: unknown, path: string): SchemaPortConfig {
   for (const key of Object.keys(record)) {
     if (!KNOWN_KEYS.has(key)) {
       throw new UsageError(
-        `Unknown key \`${key}\` in ${path}. Valid keys are: schemas, targets, output, allowLossy.`,
+        `Unknown key \`${key}\` in ${path}. Valid keys are: schemas, targets, output, allowLossy, quiet.`,
       );
     }
   }
@@ -123,6 +125,13 @@ function validateConfig(value: unknown, path: string): SchemaPortConfig {
       throw new UsageError(`\`allowLossy\` in ${path} must be a boolean.`);
     }
     config.allowLossy = record['allowLossy'];
+  }
+
+  if (record['quiet'] !== undefined) {
+    if (typeof record['quiet'] !== 'boolean') {
+      throw new UsageError(`\`quiet\` in ${path} must be a boolean.`);
+    }
+    config.quiet = record['quiet'];
   }
 
   return config;

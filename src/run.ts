@@ -104,7 +104,7 @@ function check(ctx: Context, invocation: ParsedInvocation, config: SchemaPortCon
     providers,
     failOn,
     format: invocation.format,
-    quiet: invocation.quiet ?? false,
+    quiet: invocation.quiet ?? config.quiet ?? false,
   });
 }
 
