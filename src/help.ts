@@ -42,7 +42,7 @@ const PER_COMMAND: Record<CommandName, string> = {
 Runs every selected provider's compatibility rules over each tool and prints
 the diagnostics grouped by tool, then by target.
 
-  --targets <ids>              Comma-separated: openai,anthropic,gemini,mcp
+  --targets <ids>              Comma-separated: openai,anthropic,gemini,mcp, or 'all'
   --format text|json           Default: text
   --fail-on error|warning|never  Exit 1 threshold. Default: error
   --quiet                      Print only the headline status per target and
@@ -56,7 +56,7 @@ Compiles each tool for each selected target and writes
 <dir>/<target>/<tool>.json plus <dir>/manifest.json.
 
   --out <dir>          Required (or "output" in the config file).
-  --targets <ids>      Comma-separated: openai,anthropic,gemini,mcp
+  --targets <ids>      Comma-separated: openai,anthropic,gemini,mcp, or 'all'
   --format text|json   Default: text
   --allow-lossy        Accept transformations that weaken the schema.
   --config <file>      Config file. Default: ./schemaport.config.json
@@ -69,7 +69,7 @@ of the manifest; the run still writes everything that did compile and exits 1.`,
 Compiles each tool and sends it to the provider API to find out whether the
 schema is really accepted. Targets without a hosted API are reported skipped.
 
-  --targets <ids>      Default: openai,anthropic,gemini
+  --targets <ids>      Default: openai,anthropic,gemini. 'all' adds mcp, which reports skipped
   --format text|json   Default: text
   --model <id>         Override the provider's default probe model.
   --allow-lossy        Probe with lossy compilation allowed.

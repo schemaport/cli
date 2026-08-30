@@ -18,7 +18,12 @@ export type { SchemaPortConfig } from './config.js';
 export { CONFIG_FILE_NAME } from './config.js';
 export { EXIT, UsageError } from './errors.js';
 export { helpText } from './help.js';
-export { ALL_TARGET_IDS, DEFAULT_PROBE_TARGET_IDS, DEFAULT_PROVIDERS } from './targets.js';
+export {
+  ALL_TARGET_IDS,
+  ALL_TARGETS_KEYWORD,
+  DEFAULT_PROBE_TARGET_IDS,
+  DEFAULT_PROVIDERS,
+} from './targets.js';
 export { CLI_VERSION } from './version.js';
 export type {
   Manifest,
