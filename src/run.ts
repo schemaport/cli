@@ -95,7 +95,7 @@ async function dispatch(ctx: Context, argv: readonly string[]): Promise<number> 
 
 function check(ctx: Context, invocation: ParsedInvocation, config: SchemaPortConfig): number {
   const providers = selectTargets(ctx, invocation, config, false);
-  const failOn = readCheckFailOn(invocation.failOn);
+  const failOn = readCheckFailOn(invocation.failOn ?? config.failOn);
   const { tools, errors } = loadInputs(inputPaths(invocation, config), ctx.cwd);
   if (errors.length > 0) return reportLoadErrors(ctx, 'check', invocation.format, errors);
 

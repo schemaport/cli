@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
+import type { CheckFailOn } from './args.js';
 import { UsageError } from './errors.js';
 
 export const CONFIG_FILE_NAME = 'schemaport.config.json';
@@ -21,6 +22,8 @@ export interface SchemaPortConfig {
   allowLossy?: boolean;
   /** Default `check --quiet`. */
   quiet?: boolean;
+  /** Default `check --fail-on`. */
+  failOn?: CheckFailOn;
 }
 
 export interface LoadedConfig {
@@ -29,7 +32,7 @@ export interface LoadedConfig {
   path?: string;
 }
 
-const KNOWN_KEYS = new Set(['schemas', 'targets', 'output', 'allowLossy', 'quiet']);
+const KNOWN_KEYS = new Set(['schemas', 'targets', 'output', 'allowLossy', 'quiet', 'failOn']);
 
 /**
  * Load the config file.
@@ -93,7 +96,7 @@ function validateConfig(value: unknown, path: string): SchemaPortConfig {
   for (const key of Object.keys(record)) {
     if (!KNOWN_KEYS.has(key)) {
       throw new UsageError(
-        `Unknown key \`${key}\` in ${path}. Valid keys are: schemas, targets, output, allowLossy, quiet.`,
+        `Unknown key \`${key}\` in ${path}. Valid keys are: schemas, targets, output, allowLossy, quiet, failOn.`,
       );
     }
   }
@@ -132,6 +135,17 @@ function validateConfig(value: unknown, path: string): SchemaPortConfig {
       throw new UsageError(`\`quiet\` in ${path} must be a boolean.`);
     }
     config.quiet = record['quiet'];
+  }
+
+  if (record['failOn'] !== undefined) {
+    if (
+      record['failOn'] !== 'error' &&
+      record['failOn'] !== 'warning' &&
+      record['failOn'] !== 'never'
+    ) {
+      throw new UsageError(`\`failOn\` in ${path} must be error, warning, or never.`);
+    }
+    config.failOn = record['failOn'];
   }
 
   return config;
