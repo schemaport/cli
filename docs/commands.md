@@ -1,7 +1,7 @@
 # Commands and flags
 
 ```
-schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--config <file>]
+schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--quiet] [--config <file>]
 schemaport compile <path...>  --out <dir> [--targets <ids>] [--format text|json] [--allow-lossy] [--config <file>]
 schemaport probe   <path...>  [--targets <ids>] [--format text|json] [--model <id>] [--allow-lossy] [--config <file>]
 schemaport diff    <old> <new> [--format text|json] [--fail-on breaking|any|never]
@@ -99,7 +99,24 @@ and adds `, N informational` when there are any.
 | `--targets <ids>` | all four | Targets to check. |
 | `--format text\|json` | `text` | Output format. |
 | `--fail-on error\|warning\|never` | `error` | Exit 1 when a finding at or above this severity exists. `never` always exits 0. |
+| `--quiet` | off | Print one headline status per target instead of every diagnostic. Text output only. |
 | `--config <file>` | `./schemaport.config.json` | Config file. |
+
+### `--quiet`
+
+Text output prints every diagnostic in full. `--quiet` replaces that with one
+line per target:
+
+```sh
+schemaport check ./tools --quiet
+```
+
+It changes what is printed and nothing else. Diagnostics are still collected and
+still counted, so **exit codes are unaffected** — a quiet run that finds errors
+still exits 1 under the default `--fail-on error`. It also has no effect on
+`--format json`, which is already machine-shaped.
+
+`check` is the only command that accepts it.
 
 ---
 

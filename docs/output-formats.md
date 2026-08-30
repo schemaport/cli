@@ -18,6 +18,15 @@ Markers:
 | `ℹ` | Informational |
 | `–` | Skipped |
 
+### Quiet text
+
+`check --quiet` replaces the per-diagnostic listing with one headline status per
+target. Findings are still collected and counted, so exit codes are identical
+either way — it changes what is printed, not what is found.
+
+It applies to `check` only, and to text only: `--format json` is already
+machine-shaped and is unchanged by it.
+
 ### Colour
 
 Colour is used only when **stdout is a TTY** and `NO_COLOR` is unset. Piping to a
