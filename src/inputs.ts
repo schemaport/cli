@@ -24,24 +24,37 @@ export function loadInputs(paths: readonly string[], cwd: string): LoadedInput {
   const tools: LoadedTool[] = [];
   const errors: LoadError[] = [];
 
+  // The first path to define each name. Only ever holds one entry per name, so
+  // a name repeated inside one path cannot collide with itself here.
+  const seen = new Map<string, string>();
+
   for (const path of paths) {
     const result = loadTools(absolute(path, cwd));
     tools.push(...result.tools);
     errors.push(...result.errors);
-  }
 
-  // `loadTools` de-duplicates within a single path; names must also be unique
-  // across the paths given on one command line.
-  const seen = new Map<string, string>();
-  for (const loaded of tools) {
-    const previous = seen.get(loaded.tool.name);
-    if (previous !== undefined && previous !== loaded.sourcePath) {
-      errors.push({
-        sourcePath: loaded.sourcePath,
-        message: `Duplicate tool name \`${loaded.tool.name}\`, already defined in ${previous}.`,
-      });
-    } else {
-      seen.set(loaded.tool.name, loaded.sourcePath);
+    // `loadTools` already reports every name repeated inside this one path, and
+    // those errors are in `result.errors` above. Re-scanning the merged list
+    // would report each of them a second time, so only the first definition of
+    // a name within this path is compared against the paths already loaded.
+    const definedHere = new Map<string, string>();
+    for (const loaded of result.tools) {
+      if (!definedHere.has(loaded.tool.name)) {
+        definedHere.set(loaded.tool.name, loaded.sourcePath);
+      }
+    }
+
+    // Names must also be unique across the paths given on one command line.
+    for (const [name, sourcePath] of definedHere) {
+      const previous = seen.get(name);
+      if (previous === undefined) {
+        seen.set(name, sourcePath);
+      } else if (previous !== sourcePath) {
+        errors.push({
+          sourcePath,
+          message: `Duplicate tool name \`${name}\`, already defined in ${previous}.`,
+        });
+      }
     }
   }
 

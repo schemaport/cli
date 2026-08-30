@@ -3,6 +3,7 @@ import { CLI_VERSION } from '../src/index.js';
 import {
   MALFORMED_TOOL,
   REFUND_V1,
+  TRIVIAL_TOOL,
   V1,
   cleanupTempDirs,
   invoke,
@@ -159,5 +160,72 @@ describe('output discipline', () => {
   it('never colours JSON, even on a TTY', async () => {
     const { stdout } = await invoke(['check', REFUND_V1, '--format', 'json'], { isTTY: true });
     expect(() => parseJson(stdout)).not.toThrow();
+  });
+});
+
+describe('duplicate tool names are reported once', () => {
+  /** Two files in one directory, each defining the same two tools. */
+  function duplicatedDirectory(): string {
+    const dir = tempDir();
+    const pair = JSON.stringify([
+      { ...TRIVIAL_TOOL, name: 'tool_one' },
+      { ...TRIVIAL_TOOL, name: 'tool_two' },
+    ]);
+    writeFile(dir, 'tools/a.json', pair);
+    writeFile(dir, 'tools/b.json', pair);
+    return dir;
+  }
+
+  it('reports each duplicated name once when one path defines it twice', async () => {
+    const dir = duplicatedDirectory();
+    const { code, stderr } = await invoke(['check', 'tools'], { cwd: dir });
+
+    expect(code).toBe(2);
+    expect(stderr.match(/Duplicate tool name/g)).toHaveLength(2);
+    expect(stderr).toContain('Result: 2 input errors');
+  });
+
+  it('keeps the message wording and the source path prefix', async () => {
+    const dir = duplicatedDirectory();
+    const { stderr } = await invoke(['check', 'tools'], { cwd: dir });
+
+    expect(stderr).toMatch(
+      /✗ tools\/b\.json: Duplicate tool name `tool_one`, already defined in .*a\.json\.$/m,
+    );
+    expect(stderr).toMatch(
+      /✗ tools\/b\.json: Duplicate tool name `tool_two`, already defined in .*a\.json\.$/m,
+    );
+  });
+
+  it('reports it once as JSON too', async () => {
+    const dir = duplicatedDirectory();
+    const { code, stdout } = await invoke(['check', 'tools', '--format', 'json'], { cwd: dir });
+
+    expect(code).toBe(2);
+    const errors = parseJson(stdout)['errors'] as { sourcePath: string; message: string }[];
+    expect(errors).toHaveLength(2);
+    expect(errors.map((error) => error.sourcePath)).toEqual(['tools/b.json', 'tools/b.json']);
+  });
+
+  it('still reports a name that collides across two paths on one command line', async () => {
+    const dir = duplicatedDirectory();
+    const { code, stderr } = await invoke(['check', 'tools/a.json', 'tools/b.json'], { cwd: dir });
+
+    expect(code).toBe(2);
+    expect(stderr.match(/Duplicate tool name/g)).toHaveLength(2);
+    expect(stderr).toContain('Result: 2 input errors');
+  });
+
+  it('does not report a name repeated inside a single file twice', async () => {
+    const dir = tempDir();
+    writeFile(
+      dir,
+      'tools/pair.json',
+      JSON.stringify([{ ...TRIVIAL_TOOL, name: 'tool_one' }, { ...TRIVIAL_TOOL, name: 'tool_one' }]),
+    );
+    const { code, stderr } = await invoke(['check', 'tools'], { cwd: dir });
+
+    expect(code).toBe(2);
+    expect(stderr.match(/Duplicate tool name/g)).toHaveLength(1);
   });
 });

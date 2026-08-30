@@ -17,6 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Exit codes are unchanged, and `--quiet` has no effect on `--format json`,
   which is already machine-shaped. `--quiet` is accepted by `check` only.
 
+### Fixed
+
+- A duplicate tool name is reported once, not twice. `@schemaport/core`'s
+  `loadTools` already reports every name repeated inside one path, and the CLI
+  then re-scanned the merged tool list and reported the same collisions again —
+  so two duplicated tools ended a run with `Result: 4 input errors` when there
+  were only two. The cross-path check now compares only the first definition of
+  a name within each path, so each collision is reported exactly once. The
+  message wording, the source path it is attributed to and the exit code (`2`)
+  are unchanged; only the repetition is gone.
+
 ## [0.1.0] - 2026-08-20
 
 ### Added
