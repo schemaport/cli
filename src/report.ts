@@ -11,6 +11,18 @@ export function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
+/**
+ * `2 errors, 1 warning`, with `, N informational` appended when there are any.
+ *
+ * Shared by `check`'s trailing `Result:` line and its per-target headline, so
+ * the two always count the same way and read the same way.
+ */
+export function countSummary(totals: { error: number; warning: number; info: number }): string {
+  const parts = [plural(totals.error, 'error'), plural(totals.warning, 'warning')];
+  if (totals.info > 0) parts.push(`${totals.info} informational`);
+  return parts.join(', ');
+}
+
 /** Print one JSON document to stdout and nothing else. */
 export function emitJson(ctx: Context, document: unknown): void {
   ctx.out.line(JSON.stringify(document, null, 2));

@@ -5,13 +5,20 @@ import { EXIT } from '../errors.js';
 import type { Context } from '../io.js';
 import { MARK } from '../io.js';
 import { relativeToCwd } from '../inputs.js';
-import { compileHint, emitJson, plural, severityMark } from '../report.js';
+import { compileHint, countSummary, emitJson, severityMark } from '../report.js';
 
 export interface CheckInput {
   tools: readonly LoadedTool[];
   providers: readonly SchemaPortProvider[];
   failOn: CheckFailOn;
   format: OutputFormat;
+  /**
+   * Print only the headline status per target, not the finding blocks.
+   *
+   * Text output only. JSON is already machine-shaped, so `--quiet` leaves it
+   * exactly as it was.
+   */
+  quiet: boolean;
 }
 
 /** Run every selected provider's `check()` over every loaded tool. */
@@ -52,7 +59,7 @@ export function runCheck(ctx: Context, input: CheckInput): number {
       })),
     });
   } else {
-    printText(ctx, results, totals);
+    printText(ctx, results, totals, input.quiet);
   }
 
   return exitCode(input.failOn, totals.error, totals.warning);
@@ -72,6 +79,7 @@ function printText(
   ctx: Context,
   results: readonly ToolResult[],
   totals: { error: number; warning: number; info: number },
+  quiet: boolean,
 ): void {
   if (results.length === 0) {
     ctx.out.line('No tools found.');
@@ -87,6 +95,11 @@ function printText(
         ctx.out.line(`${ctx.out.green(MARK.ok)} Compatible`);
         continue;
       }
+      if (quiet) {
+        const counts = countBySeverity(target.diagnostics);
+        ctx.out.line(`${severityMark(ctx, worstSeverity(counts))} ${countSummary(counts)}`);
+        continue;
+      }
       for (const diagnostic of target.diagnostics) {
         ctx.out.line(`${severityMark(ctx, diagnostic.severity)} ${diagnostic.message}`);
         ctx.out.line(`  Path: ${diagnostic.path}`);
@@ -99,9 +112,18 @@ function printText(
     ctx.out.line();
   }
 
-  const parts = [plural(totals.error, 'error'), plural(totals.warning, 'warning')];
-  if (totals.info > 0) parts.push(`${totals.info} informational`);
-  ctx.out.line(`Result: ${parts.join(', ')}`);
+  ctx.out.line(`Result: ${countSummary(totals)}`);
+}
+
+/** The marker a target's headline gets: the most severe thing it reported. */
+function worstSeverity(counts: {
+  error: number;
+  warning: number;
+  info: number;
+}): Diagnostic['severity'] {
+  if (counts.error > 0) return 'error';
+  if (counts.warning > 0) return 'warning';
+  return 'info';
 }
 
 function exitCode(failOn: CheckFailOn, errors: number, warnings: number): number {

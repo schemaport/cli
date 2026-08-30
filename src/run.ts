@@ -99,7 +99,13 @@ function check(ctx: Context, invocation: ParsedInvocation, config: SchemaPortCon
   const { tools, errors } = loadInputs(inputPaths(invocation, config), ctx.cwd);
   if (errors.length > 0) return reportLoadErrors(ctx, 'check', invocation.format, errors);
 
-  return runCheck(ctx, { tools, providers, failOn, format: invocation.format });
+  return runCheck(ctx, {
+    tools,
+    providers,
+    failOn,
+    format: invocation.format,
+    quiet: invocation.quiet ?? false,
+  });
 }
 
 function compile(ctx: Context, invocation: ParsedInvocation, config: SchemaPortConfig): number {

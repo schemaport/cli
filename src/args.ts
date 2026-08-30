@@ -22,6 +22,8 @@ export interface ParsedInvocation {
   out?: string;
   allowLossy?: boolean;
   model?: string;
+  /** `check --quiet`: print the headline status per target, not every finding. */
+  quiet?: boolean;
 }
 
 type OptionConfig = Record<string, { type: 'string' | 'boolean'; short?: string }>;
@@ -41,6 +43,7 @@ const OPTIONS: Record<CommandName, OptionConfig> = {
   check: {
     ...SELECTION,
     'fail-on': { type: 'string' },
+    quiet: { type: 'boolean' },
   },
   compile: {
     ...SELECTION,
@@ -135,6 +138,8 @@ export function parseInvocation(argv: readonly string[]): ParsedInvocation {
   if (typeof model === 'string') invocation.model = model;
 
   if (values['allow-lossy'] === true) invocation.allowLossy = true;
+
+  if (values['quiet'] === true) invocation.quiet = true;
 
   return invocation;
 }

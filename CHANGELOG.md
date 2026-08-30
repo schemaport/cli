@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `schemaport check --quiet` — text output prints one headline status per
+  tool/target (`✗ 3 errors, 2 warnings`, or `✓ Compatible`) plus the trailing
+  `Result:` line, and leaves out the individual finding blocks: the message, the
+  `Path:` line, the `SchemaPort can compile this:` line and the `Docs:` line.
+  Useful when a CI log only needs to say which target is unhappy and how badly.
+  Exit codes are unchanged, and `--quiet` has no effect on `--format json`,
+  which is already machine-shaped. `--quiet` is accepted by `check` only.
+
 ### Fixed
 
 - A duplicate tool name is reported once, not twice. `@schemaport/core`'s
