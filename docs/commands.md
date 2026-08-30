@@ -33,7 +33,8 @@ is checked, compiled or probed on a partially valid input set.
 
 ### `--targets <ids>`
 
-A comma-separated list of `openai`, `anthropic`, `gemini`, `mcp`.
+A comma-separated list of `openai`, `anthropic`, `gemini`, `mcp`, or the
+shorthand `all`.
 
 - `check`, `compile`: all four by default.
 - `probe`: `openai,anthropic,gemini` by default. MCP is a protocol with no
@@ -41,6 +42,36 @@ A comma-separated list of `openai`, `anthropic`, `gemini`, `mcp`.
 
 An unknown id is a usage error (exit 2) that lists the valid ids. Targets are
 printed in the order you listed them.
+
+#### `all`
+
+`all` expands to every registered target, in registry order:
+
+```sh
+schemaport check ./tools --targets all
+# openai, anthropic, gemini, mcp
+```
+
+This is **not** the same as omitting `--targets`. Omitting it takes the
+command's default, and for `probe` that default is the three hosted providers.
+`--targets all` says every one and means it, so:
+
+```sh
+schemaport probe ./tools              # openai, anthropic, gemini
+schemaport probe ./tools --targets all  # ...and mcp, which reports `skipped`
+```
+
+The skipped MCP result explains that there is no endpoint to probe, which is a
+more useful answer than three targets appearing where you asked for four.
+
+`all` composes with explicit ids, and puts those first:
+
+```sh
+schemaport check ./tools --targets mcp,all
+# mcp, openai, anthropic, gemini
+```
+
+Naming a target twice does not run it twice.
 
 ### `--format text|json`
 
@@ -96,7 +127,7 @@ and adds `, N informational` when there are any.
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--targets <ids>` | all four | Targets to check. |
+| `--targets <ids>` | all four | Targets to check. `all` names every one explicitly. |
 | `--format text\|json` | `text` | Output format. |
 | `--fail-on error\|warning\|never` | `error` | Exit 1 when a finding at or above this severity exists. `never` always exits 0. |
 | `--quiet` | off | Print one headline status per target instead of every diagnostic. Text output only. |
@@ -217,7 +248,7 @@ run exits 1. Pass `--allow-lossy` to accept the weaker output.
 | Flag | Default | Meaning |
 |---|---|---|
 | `--out <dir>` | — | **Required** (or `output` in the config file). Created if it does not exist. |
-| `--targets <ids>` | all four | Targets to compile for. |
+| `--targets <ids>` | all four | Targets to compile for. `all` names every one explicitly. |
 | `--format text\|json` | `text` | Output format. Files are written either way. |
 | `--allow-lossy` | off | Accept transformations that weaken the schema. |
 | `--config <file>` | `./schemaport.config.json` | Config file. |
@@ -265,7 +296,7 @@ the output names the exact variable and the exact command to re-run.
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--targets <ids>` | `openai,anthropic,gemini` | Targets to probe. |
+| `--targets <ids>` | `openai,anthropic,gemini` | Targets to probe. `all` adds `mcp`, which reports `skipped`. |
 | `--format text\|json` | `text` | Output format. |
 | `--model <id>` | the provider's default probe model | Model to probe with. |
 | `--allow-lossy` | off | Allow lossy compilation before probing. Without it, a tool whose compilation is refused is reported as an error, and nothing is sent. |

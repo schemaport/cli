@@ -20,7 +20,19 @@ export const ALL_TARGET_IDS = ['openai', 'anthropic', 'gemini', 'mcp'] as const;
 export const DEFAULT_PROBE_TARGET_IDS = ['openai', 'anthropic', 'gemini'] as const;
 
 /**
+ * Shorthand standing for every registered target.
+ *
+ * `--targets all` and `--targets openai` differ from *omitting* `--targets`:
+ * the default is whatever the command picks, and for `probe` that is the three
+ * hosted providers, not all four. Writing `all` says every one, and means it.
+ */
+export const ALL_TARGETS_KEYWORD = 'all';
+
+/**
  * Turn a list of target ids into providers, preserving the requested order.
+ *
+ * `all` expands to every registered provider, in registry order. It composes
+ * with explicit ids: `--targets mcp,all` puts MCP first and appends the rest.
  *
  * Unknown ids are a usage error rather than a silent skip: a typo in CI should
  * fail loudly, not quietly check three targets instead of four.
@@ -30,15 +42,27 @@ export function resolveTargets(
   providers: readonly SchemaPortProvider[],
 ): SchemaPortProvider[] {
   const byId = new Map(providers.map((provider) => [provider.id, provider]));
-  const valid = providers.map((provider) => provider.id).join(', ');
+  const valid = [...providers.map((provider) => provider.id), ALL_TARGETS_KEYWORD].join(', ');
   const resolved: SchemaPortProvider[] = [];
 
-  for (const id of ids) {
-    const provider = byId.get(id);
-    if (!provider) {
-      throw new UsageError(`Unknown target \`${id}\`. Valid targets are: ${valid}.`);
-    }
+  const push = (provider: SchemaPortProvider): void => {
     if (!resolved.includes(provider)) resolved.push(provider);
+  };
+
+  for (const id of ids) {
+    // A registry is injectable, so a provider could genuinely be called `all`.
+    // Its own id wins over the shorthand — otherwise naming it would make it
+    // unselectable.
+    const provider = byId.get(id);
+    if (provider) {
+      push(provider);
+      continue;
+    }
+    if (id === ALL_TARGETS_KEYWORD) {
+      for (const each of providers) push(each);
+      continue;
+    }
+    throw new UsageError(`Unknown target \`${id}\`. Valid targets are: ${valid}.`);
   }
 
   return resolved;

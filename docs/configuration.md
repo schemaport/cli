@@ -20,7 +20,7 @@ loader and no plugin resolution.
 | Key | Type | Replaces | Meaning |
 |---|---|---|---|
 | `schemas` | string | `<path...>` | Default input path (a file or a directory) used when no path is given on the command line. |
-| `targets` | string[] | `--targets` | Default target ids. |
+| `targets` | string[] | `--targets` | Default target ids. Accepts `"all"` as a shorthand for every target. |
 | `output` | string | `--out` | Default output directory for `compile`. |
 | `allowLossy` | boolean | `--allow-lossy` | Default lossy-compilation setting for `compile` and `probe`. |
 | `quiet` | boolean | `--quiet` | Default quiet output for `check`. Text output only. |
@@ -42,7 +42,11 @@ schemaport check --targets mcp
 ```
 
 `--targets` from the config file is validated the same way as the flag: an
-unknown id exits 2 and lists the valid ids.
+unknown id exits 2 and lists the valid ids, and `"all"` expands the same way:
+
+```json
+{ "targets": ["all"] }
+```
 
 `schemas` supplies only a *default*. Any path on the command line replaces it
 entirely — the two are never merged.
