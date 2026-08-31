@@ -1,7 +1,7 @@
 # Commands and flags
 
 ```
-schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--quiet] [--config <file>]
+schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--quiet|--matrix] [--config <file>]
 schemaport compile <path...>  --out <dir> [--targets <ids>] [--format text|json] [--allow-lossy] [--config <file>]
 schemaport probe   <path...>  [--targets <ids>] [--format text|json] [--model <id>] [--allow-lossy] [--config <file>]
 schemaport diff    <old> <new> [--targets <ids>] [--format text|json] [--fail-on breaking|any|never]
@@ -131,7 +131,54 @@ and adds `, N informational` when there are any.
 | `--format text\|json` | `text` | Output format. |
 | `--fail-on error\|warning\|never` | `error` | Exit 1 when a finding at or above this severity exists. `never` always exits 0. |
 | `--quiet` | off | Print one headline status per target instead of every diagnostic. Text output only. |
+| `--matrix` | off | Print one row per tool and one column per target. Text output only. |
 | `--config <file>` | `./schemaport.config.json` | Config file. |
+
+### `--matrix`
+
+`check` prints a block per tool per target. At four targets that is four blocks
+a tool, and a forty-tool set produces a hundred and sixty of them — enough that
+the question the product exists to answer, *is my tool set portable?*, gets lost
+in the output that answers it.
+
+```sh
+schemaport check ./tools --targets all --matrix
+```
+
+```
+Tool           OpenAI  Anthropic  Gemini  MCP
+create_ticket    ✗         !        ✗      ✓
+refund_order     ✓         !        ✗      ✓
+schedule_job     ✓         !        ✗      ✓
+tag_resource     ✗         !        ✗      ✓
+
+✓ clean   ! warning   ✗ error   i info
+Clean: OpenAI 2/4 · Anthropic 0/4 · Gemini 0/4 · MCP 4/4
+
+Result: 10 errors, 8 warnings
+```
+
+Each cell is the **worst severity that target reported** for that tool — the
+same rollup `--quiet` prints. `clean` means nothing was reported at all, which
+is why a tool with only informational findings shows `i` rather than `✓`.
+
+Two things it deliberately is not:
+
+- **It is not a compile verdict.** An error here can be one compilation repairs:
+  `openai/strict-optional-property` is an error and compile fixes it. "Would
+  this ship?" is a different question — [`compile`](#schemaport-compile) and
+  [`diff --targets`](#target-compatibility) answer it.
+- **It is not a second analysis.** It is a rendering of exactly the diagnostics
+  the listing would have printed, so the `Result:` line and the exit code are
+  identical either way.
+
+The warning and info markers are ASCII rather than the `⚠` and `ℹ` used in the
+listing. Both of those default to emoji presentation, which many terminals
+render two columns wide while the string reports one character — invisible in
+prose, but it shifts every column of a table, differently per terminal.
+
+`--quiet` and `--matrix` are two different summaries of the same thing; passing
+both is a usage error rather than a silent preference for one.
 
 ### `--quiet`
 

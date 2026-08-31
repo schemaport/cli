@@ -18,6 +18,15 @@ Markers:
 | `ℹ` | Informational |
 | `–` | Skipped |
 
+### The portability matrix
+
+`check --matrix` replaces the per-tool listing with one row per tool and one
+column per target, plus a per-target count of how many tools are completely
+clean. Like `--quiet` it is a text rendering of the diagnostics already
+collected: the `Result:` line, the counts and the exit code are unchanged, and
+`--format json` is unaffected. See
+[commands.md](commands.md#--matrix).
+
 ### Quiet text
 
 `check --quiet` replaces the per-diagnostic listing with one headline status per

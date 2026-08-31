@@ -45,6 +45,7 @@ the diagnostics grouped by tool, then by target.
   --targets <ids>              Comma-separated: openai,anthropic,gemini,mcp, or 'all'
   --format text|json           Default: text
   --fail-on error|warning|never  Exit 1 threshold. Default: error
+  --matrix                     Print one row per tool, one column per target
   --quiet                      Print only the headline status per target and
                                the Result line, not the individual findings.
                                Text output only; --format json is unchanged.

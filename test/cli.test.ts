@@ -149,6 +149,12 @@ describe('usage errors exit 2', () => {
     expect(stderr).toContain('Unknown target');
   });
 
+  it('rejects --quiet and --matrix together', async () => {
+    const { code, stderr } = await invoke(['check', V1, '--quiet', '--matrix']);
+    expect(code).toBe(2);
+    expect(stderr).toContain('two different summaries');
+  });
+
   it('requires an input path when no config supplies one', async () => {
     const dir = tempDir();
     const { code, stderr } = await invoke(['check'], { cwd: dir });

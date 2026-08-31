@@ -6,6 +6,7 @@ import type { Context } from '../io.js';
 import { MARK } from '../io.js';
 import { relativeToCwd } from '../inputs.js';
 import { compileHint, countSummary, emitJson, severityMark } from '../report.js';
+import { buildMatrix, printMatrix } from '../matrix.js';
 
 export interface CheckInput {
   tools: readonly LoadedTool[];
@@ -19,6 +20,11 @@ export interface CheckInput {
    * exactly as it was.
    */
   quiet: boolean;
+  /**
+   * Print one row per tool and one column per target instead of the listing.
+   * Text output only, for the same reason as `quiet`.
+   */
+  matrix: boolean;
 }
 
 /** Run every selected provider's `check()` over every loaded tool. */
@@ -59,7 +65,26 @@ export function runCheck(ctx: Context, input: CheckInput): number {
       })),
     });
   } else {
-    printText(ctx, results, totals, input.quiet);
+    if (input.matrix) {
+      printMatrix(
+        ctx,
+        buildMatrix(
+          results.map((entry) => ({
+            toolName: entry.loaded.tool.name,
+            perTarget: entry.perTarget.map((target) => ({
+              id: target.provider.id,
+              displayName: target.provider.displayName,
+              diagnostics: target.diagnostics,
+            })),
+          })),
+        ),
+        results.length,
+      );
+      ctx.out.line();
+      ctx.out.line(`Result: ${countSummary(totals)}`);
+    } else {
+      printText(ctx, results, totals, input.quiet);
+    }
   }
 
   return exitCode(input.failOn, totals.error, totals.warning);
