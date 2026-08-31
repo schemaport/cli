@@ -149,6 +149,41 @@ is the provider's own message, unmodified.
 `changes` entries may also carry `before` and `after` values when the change is a
 modification.
 
+With `--targets`, the document gains a `targets` array and a
+`summary.targetRegressions` count. Without it neither key is present, so a
+consumer written against the shape above keeps working:
+
+```json
+{
+  "summary": { "breaking": 0, "nonBreaking": 1, "informational": 0, "targetRegressions": 1 },
+  "targets": [
+    {
+      "targetId": "openai",
+      "displayName": "OpenAI",
+      "regressed": 1,
+      "fixed": 0,
+      "tools": [
+        {
+          "toolName": "create_ticket",
+          "verdict": "regressed",
+          "before": true,
+          "after": false,
+          "refusedBy": [
+            { "code": "converted-one-of-to-any-of", "path": "inputSchema.properties.assignee.oneOf" }
+          ],
+          "added": [],
+          "resolved": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+`verdict` is `regressed`, `fixed` or `unchanged`. `added` and `resolved` list
+diagnostics that appeared or went away, each as `{code, path, severity}`; a tool
+whose verdict is `unchanged` appears only when one of them is non-empty.
+
 ### Errors in JSON mode
 
 Load errors and usage errors do not go to stderr in JSON mode. They come back as

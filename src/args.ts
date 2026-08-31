@@ -57,6 +57,10 @@ const OPTIONS: Record<CommandName, OptionConfig> = {
   },
   diff: {
     ...COMMON,
+    // `--targets` but not `--config`: target analysis on `diff` is opt-in, and
+    // the config file's other keys are meaningless here (`out`, `schemas`) or
+    // type-incompatible (`failOn` takes a different value set for `diff`).
+    targets: { type: 'string' },
     'fail-on': { type: 'string' },
   },
 };
