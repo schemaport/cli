@@ -6,7 +6,7 @@ Usage:
   schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--config <file>]
   schemaport compile <path...>  --out <dir> [--targets <ids>] [--format text|json] [--allow-lossy] [--config <file>]
   schemaport probe   <path...>  [--targets <ids>] [--format text|json] [--model <id>] [--allow-lossy] [--config <file>]
-  schemaport diff    <old> <new> [--format text|json] [--fail-on breaking|any|never]
+  schemaport diff    <old> <new> [--targets <ids>] [--format text|json] [--fail-on breaking|any|never]
 
 Commands:
   check     Report where a tool schema is incompatible with each target.
@@ -45,6 +45,7 @@ the diagnostics grouped by tool, then by target.
   --targets <ids>              Comma-separated: openai,anthropic,gemini,mcp, or 'all'
   --format text|json           Default: text
   --fail-on error|warning|never  Exit 1 threshold. Default: error
+  --matrix                     Print one row per tool, one column per target
   --quiet                      Print only the headline status per target and
                                the Result line, not the individual findings.
                                Text output only; --format json is unchanged.
@@ -83,6 +84,10 @@ model or a network failure exits 3 and is never reported as a rejection.`,
 Compares two tool sets and classifies every change as breaking, non-breaking or
 informational. Never contacts a provider API.
 
+With --targets, also reports per-target compatibility: which tools compiled
+before and do not compile now. A regression counts as breaking.
+
+  --targets <ids>                  Compare compatibility for these targets too
   --format text|json               Default: text
   --fail-on breaking|any|never     Exit 1 threshold. Default: breaking`,
 };

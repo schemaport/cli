@@ -18,6 +18,15 @@ Markers:
 | `ℹ` | Informational |
 | `–` | Skipped |
 
+### The portability matrix
+
+`check --matrix` replaces the per-tool listing with one row per tool and one
+column per target, plus a per-target count of how many tools are completely
+clean. Like `--quiet` it is a text rendering of the diagnostics already
+collected: the `Result:` line, the counts and the exit code are unchanged, and
+`--format json` is unaffected. See
+[commands.md](commands.md#--matrix).
+
 ### Quiet text
 
 `check --quiet` replaces the per-diagnostic listing with one headline status per
@@ -148,6 +157,41 @@ is the provider's own message, unmodified.
 
 `changes` entries may also carry `before` and `after` values when the change is a
 modification.
+
+With `--targets`, the document gains a `targets` array and a
+`summary.targetRegressions` count. Without it neither key is present, so a
+consumer written against the shape above keeps working:
+
+```json
+{
+  "summary": { "breaking": 0, "nonBreaking": 1, "informational": 0, "targetRegressions": 1 },
+  "targets": [
+    {
+      "targetId": "openai",
+      "displayName": "OpenAI",
+      "regressed": 1,
+      "fixed": 0,
+      "tools": [
+        {
+          "toolName": "create_ticket",
+          "verdict": "regressed",
+          "before": true,
+          "after": false,
+          "refusedBy": [
+            { "code": "converted-one-of-to-any-of", "path": "inputSchema.properties.assignee.oneOf" }
+          ],
+          "added": [],
+          "resolved": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+`verdict` is `regressed`, `fixed` or `unchanged`. `added` and `resolved` list
+diagnostics that appeared or went away, each as `{code, path, severity}`; a tool
+whose verdict is `unchanged` appears only when one of them is non-empty.
 
 ### Errors in JSON mode
 

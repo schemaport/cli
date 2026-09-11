@@ -24,6 +24,8 @@ export interface ParsedInvocation {
   model?: string;
   /** `check --quiet`: print the headline status per target, not every finding. */
   quiet?: boolean;
+  /** `check --matrix`: print one row per tool, one column per target. */
+  matrix?: boolean;
 }
 
 type OptionConfig = Record<string, { type: 'string' | 'boolean'; short?: string }>;
@@ -44,6 +46,7 @@ const OPTIONS: Record<CommandName, OptionConfig> = {
     ...SELECTION,
     'fail-on': { type: 'string' },
     quiet: { type: 'boolean' },
+    matrix: { type: 'boolean' },
   },
   compile: {
     ...SELECTION,
@@ -57,6 +60,10 @@ const OPTIONS: Record<CommandName, OptionConfig> = {
   },
   diff: {
     ...COMMON,
+    // `--targets` but not `--config`: target analysis on `diff` is opt-in, and
+    // the config file's other keys are meaningless here (`out`, `schemas`) or
+    // type-incompatible (`failOn` takes a different value set for `diff`).
+    targets: { type: 'string' },
     'fail-on': { type: 'string' },
   },
 };
@@ -140,6 +147,13 @@ export function parseInvocation(argv: readonly string[]): ParsedInvocation {
   if (values['allow-lossy'] === true) invocation.allowLossy = true;
 
   if (values['quiet'] === true) invocation.quiet = true;
+  if (values['matrix'] === true) invocation.matrix = true;
+
+  // Both replace the per-finding listing with a summary, in different shapes.
+  // Silently picking one would hide the other; saying so costs nothing.
+  if (invocation.quiet === true && invocation.matrix === true) {
+    throw new UsageError('`--quiet` and `--matrix` are two different summaries; pass one.');
+  }
 
   return invocation;
 }

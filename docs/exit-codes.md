@@ -46,9 +46,14 @@ schemaport probe tools/ || [ $? -eq 3 ]
 
 | `--fail-on` | Exits 1 when |
 |---|---|
-| `breaking` (default) | any breaking change exists |
-| `any` | any change exists at all |
+| `breaking` (default) | any breaking change exists, **or any target compatibility regression** |
+| `any` | any change exists at all, or any target's findings changed |
 | `never` | never — always exits 0 |
+
+A compatibility regression counts as breaking rather than as "any": a tool that
+compiled before and does not compile now will not ship, which is the same class
+of problem as a broken caller. It is only ever reported when `--targets` was
+passed.
 
 ## Notes
 

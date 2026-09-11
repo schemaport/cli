@@ -1,10 +1,10 @@
 # Commands and flags
 
 ```
-schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--quiet] [--config <file>]
+schemaport check   <path...>  [--targets <ids>] [--format text|json] [--fail-on error|warning|never] [--quiet|--matrix] [--config <file>]
 schemaport compile <path...>  --out <dir> [--targets <ids>] [--format text|json] [--allow-lossy] [--config <file>]
 schemaport probe   <path...>  [--targets <ids>] [--format text|json] [--model <id>] [--allow-lossy] [--config <file>]
-schemaport diff    <old> <new> [--format text|json] [--fail-on breaking|any|never]
+schemaport diff    <old> <new> [--targets <ids>] [--format text|json] [--fail-on breaking|any|never]
 schemaport --help | --version
 ```
 
@@ -131,7 +131,54 @@ and adds `, N informational` when there are any.
 | `--format text\|json` | `text` | Output format. |
 | `--fail-on error\|warning\|never` | `error` | Exit 1 when a finding at or above this severity exists. `never` always exits 0. |
 | `--quiet` | off | Print one headline status per target instead of every diagnostic. Text output only. |
+| `--matrix` | off | Print one row per tool and one column per target. Text output only. |
 | `--config <file>` | `./schemaport.config.json` | Config file. |
+
+### `--matrix`
+
+`check` prints a block per tool per target. At four targets that is four blocks
+a tool, and a forty-tool set produces a hundred and sixty of them — enough that
+the question the product exists to answer, *is my tool set portable?*, gets lost
+in the output that answers it.
+
+```sh
+schemaport check ./tools --targets all --matrix
+```
+
+```
+Tool           OpenAI  Anthropic  Gemini  MCP
+create_ticket    ✗         !        ✗      ✓
+refund_order     ✓         !        ✗      ✓
+schedule_job     ✓         !        ✗      ✓
+tag_resource     ✗         !        ✗      ✓
+
+✓ clean   ! warning   ✗ error   i info
+Clean: OpenAI 2/4 · Anthropic 0/4 · Gemini 0/4 · MCP 4/4
+
+Result: 10 errors, 8 warnings
+```
+
+Each cell is the **worst severity that target reported** for that tool — the
+same rollup `--quiet` prints. `clean` means nothing was reported at all, which
+is why a tool with only informational findings shows `i` rather than `✓`.
+
+Two things it deliberately is not:
+
+- **It is not a compile verdict.** An error here can be one compilation repairs:
+  `openai/strict-optional-property` is an error and compile fixes it. "Would
+  this ship?" is a different question — [`compile`](#schemaport-compile) and
+  [`diff --targets`](#target-compatibility) answer it.
+- **It is not a second analysis.** It is a rendering of exactly the diagnostics
+  the listing would have printed, so the `Result:` line and the exit code are
+  identical either way.
+
+The warning and info markers are ASCII rather than the `⚠` and `ℹ` used in the
+listing. Both of those default to emoji presentation, which many terminals
+render two columns wide while the string reports one character — invisible in
+prose, but it shifts every column of a table, differently per terminal.
+
+`--quiet` and `--matrix` are two different summaries of the same thing; passing
+both is a usage error rather than a silent preference for one.
 
 ### `--quiet`
 
@@ -332,11 +379,79 @@ Result: 2 breaking, 1 non-breaking, 1 informational
 Tools that did not change are not printed. When nothing changed at all, the
 command prints `No changes.`
 
+### Target compatibility
+
+The output above answers one question: *would a caller written against the old
+schema still work?* That is provider-independent, and it is the right default.
+
+It is not the only way a change can hurt. Adding an **optional** property is
+textbook non-breaking — the canonical diff says `0 breaking` — but if that
+property uses `oneOf`, OpenAI can only express it by widening to `anyOf`, which
+is lossy, and the tool stops compiling. The schema got safer for callers and
+unshippable for a provider.
+
+`--targets` compiles both sides against each target and reports what changed
+about *compatibility*:
+
+```sh
+schemaport diff ./v1 ./v2 --targets openai,gemini
+```
+
+```
+Result: 0 breaking, 1 non-breaking, 0 informational
+
+Target compatibility
+
+OpenAI
+  ✗ create_ticket: compiled before, refused now (OpenAI).
+      converted-one-of-to-any-of  inputSchema.properties.assignee.oneOf
+
+Gemini
+  No compatibility change.
+
+Target result: 1 compatibility regression
+```
+
+Three verdicts per tool, per target:
+
+| | Meaning |
+|---|---|
+| `✗ regressed` | Compiled before, refused now. |
+| `✓ fixed` | Was refused, compiles now. |
+| `⚠ findings changed` | Still compiles, but diagnostics appeared or went away. |
+
+A refusal names the **transformation responsible and its path**, not the generic
+`core/lossy-transformation-refused` that `finalizeCompile` wraps everything in.
+`converted-one-of-to-any-of at inputSchema.properties.assignee.oneOf` points at
+the change to make; the wrapper points at the whole tool.
+
+Four details worth knowing:
+
+- **Compilation is attempted without `allowLossy`**, because that is the
+  question being asked — would this still ship? A tool that only compiles by
+  discarding constraints has not stayed compatible.
+- **Added and removed tools are skipped.** The canonical diff already reports
+  them, and a tool that did not exist cannot have regressed.
+- **A compatibility regression is a breaking change** for exit purposes: it
+  exits 1 under the default `--fail-on breaking`, not only under `any`.
+- **A provider adapter that throws is reported as a refusal**, not a crash. One
+  bad adapter should not take the whole diff down.
+
 ### Flags
 
 | Flag | Default | Meaning |
 |---|---|---|
+| `--targets <ids>` | none | Also compare per-target compatibility. Accepts `all`. |
 | `--format text\|json` | `text` | Output format. |
-| `--fail-on breaking\|any\|never` | `breaking` | Exit 1 on breaking changes, on any change, or never. |
+| `--fail-on breaking\|any\|never` | `breaking` | Exit 1 on breaking changes, a compatibility regression, any change, or never. |
 
-`diff` takes neither `--targets` nor `--config`; passing them is a usage error.
+Target analysis is **opt-in**. Without `--targets`, `diff` loads no provider,
+compiles nothing, and prints exactly what it printed before — the JSON document
+gains no `targets` key either.
+
+`diff` still takes no `--config`; passing it is a usage error. `--targets` is a
+direct, unambiguous flag, but a config file is six keys of which four are
+meaningless here (`schemas`, `output`, `allowLossy`, `quiet`) and one —
+`failOn` — takes a different set of values for `diff` than for `check`. So the
+`targets` key in a config file does **not** apply to `diff`; name them on the
+command line.

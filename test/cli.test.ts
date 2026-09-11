@@ -132,9 +132,27 @@ describe('usage errors exit 2', () => {
     expect(stderr).toContain('exactly two paths');
   });
 
-  it('does not accept --targets on diff', async () => {
-    const { code } = await invoke(['diff', V1, V1, '--targets', 'openai']);
+  it('accepts --targets on diff, but still not --config', async () => {
+    // `--targets` is a direct, unambiguous flag. `--config` is not: four of its
+    // six keys are meaningless for `diff`, and `failOn` takes a different value
+    // set, so it stays rejected.
+    const targeted = await invoke(['diff', V1, V1, '--targets', 'openai']);
+    expect(targeted.code).toBe(0);
+
+    const configured = await invoke(['diff', V1, V1, '--config', 'anything.json']);
+    expect(configured.code).toBe(2);
+  });
+
+  it('rejects an unknown target on diff', async () => {
+    const { code, stderr } = await invoke(['diff', V1, V1, '--targets', 'claude']);
     expect(code).toBe(2);
+    expect(stderr).toContain('Unknown target');
+  });
+
+  it('rejects --quiet and --matrix together', async () => {
+    const { code, stderr } = await invoke(['check', V1, '--quiet', '--matrix']);
+    expect(code).toBe(2);
+    expect(stderr).toContain('two different summaries');
   });
 
   it('requires an input path when no config supplies one', async () => {

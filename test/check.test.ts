@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { REFUND_V1, V1, cleanupTempDirs, invoke, parseJson } from './helpers.js';
+import { REFUND_V1, V1, cleanupTempDirs, invoke, parseJson, tempDir, writeFile } from './helpers.js';
 import { compatibleProvider, diagnosingProvider } from './fakes.js';
 
 afterAll(cleanupTempDirs);
@@ -172,5 +172,56 @@ describe('check --quiet', () => {
     const { code, stdout } = await invoke(['check', '--help']);
     expect(code).toBe(0);
     expect(stdout).toContain('--quiet');
+  });
+});
+
+describe('check --matrix', () => {
+  it('prints one row per tool and one column per target', async () => {
+    const { stdout } = await invoke(['check', V1, '--targets', 'openai,mcp', '--matrix']);
+    const lines = stdout.split('\n');
+
+    expect(lines[0]).toMatch(/^Tool\s+OpenAI\s+MCP$/);
+    expect(stdout).toContain('Clean: OpenAI');
+    expect(stdout).toContain('MCP');
+  });
+
+  it('prints a legend, because two markers are not the usual glyphs', async () => {
+    const { stdout } = await invoke(['check', V1, '--targets', 'mcp', '--matrix']);
+
+    expect(stdout).toContain('! warning');
+    expect(stdout).toContain('i info');
+  });
+
+  it('leaves no trailing whitespace on a row', async () => {
+    const { stdout } = await invoke(['check', V1, '--targets', 'openai,mcp', '--matrix']);
+
+    for (const line of stdout.split('\n')) expect(line).toBe(line.trimEnd());
+  });
+
+  it('still prints the Result line and keeps the exit code', async () => {
+    const listed = await invoke(['check', V1, '--targets', 'openai']);
+    const matrixed = await invoke(['check', V1, '--targets', 'openai', '--matrix']);
+
+    expect(matrixed.code).toBe(listed.code);
+    const resultLine = listed.stdout.split('\n').find((line) => line.startsWith('Result:'));
+    expect(matrixed.stdout).toContain(resultLine as string);
+  });
+
+  it('does not change JSON output, which is already machine-shaped', async () => {
+    const plain = await invoke(['check', V1, '--targets', 'openai', '--format', 'json']);
+    const matrixed = await invoke(['check', V1, '--targets', 'openai', '--matrix', '--format', 'json']);
+
+    expect(matrixed.stdout).toBe(plain.stdout);
+  });
+
+  it('does not swallow a load error', async () => {
+    // An empty directory never reaches the printer — it is an input error, and
+    // `--matrix` must not change that.
+    const dir = tempDir();
+    writeFile(dir, 'tools/.keep', '');
+    const { code, stderr } = await invoke(['check', 'tools', '--matrix'], { cwd: dir });
+
+    expect(code).toBe(2);
+    expect(stderr).toContain('no .json tool definitions');
   });
 });
