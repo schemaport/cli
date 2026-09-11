@@ -161,11 +161,19 @@ function diff(ctx: Context, invocation: ParsedInvocation): number {
   const errors = [...before.errors, ...after.errors];
   if (errors.length > 0) return reportLoadErrors(ctx, 'diff', invocation.format, errors);
 
+  // Target analysis is opt-in. Without `--targets`, `diff` loads no provider
+  // and compiles nothing, exactly as before.
+  const providers =
+    invocation.targets === undefined
+      ? undefined
+      : resolveTargets(invocation.targets, ctx.providers);
+
   return runDiff(ctx, {
     before: before.tools,
     after: after.tools,
     failOn,
     format: invocation.format,
+    ...(providers === undefined ? {} : { providers }),
   });
 }
 
